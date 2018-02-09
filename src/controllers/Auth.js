@@ -3,6 +3,25 @@ import jwt from 'jsonwebtoken';
 import db from '../utils/db';
 
 class AuthController {
+  static async checkToken(payload) {
+    try {
+      const attemptingUser = await db
+        .select('id', 'emailAddress')
+        .where({
+          emailAddress: payload.emailAddress,
+          id: payload.id,
+        })
+        .from('users');
+
+      if (!attemptingUser[0]) {
+        throw new Error('Access denied');
+      }
+
+      return attemptingUser[0];
+    } catch (e) {
+      return false;
+    }
+  }
   static async create(payload) {
     try {
       const { emailAddress, password } = payload.body;
@@ -69,6 +88,15 @@ class AuthController {
         success: false,
         error: e.toString(),
       };
+      console.error(e);
+    }
+  }
+  static async delete(payload) {
+    try {
+      return {
+        message: 'Not implemented',
+      };
+    } catch (e) {
       console.error(e);
     }
   }

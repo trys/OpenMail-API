@@ -1,4 +1,5 @@
 import express from 'express';
+import passport from 'passport';
 import AuthController from '../controllers/Auth';
 const router = express.Router();
 
@@ -18,28 +19,53 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
-  try {
-    res.send('Get all users');
-  } catch (e) {
-    res.send('Failed to get all users');
-  }
-});
+router.get(
+  '/',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      res.send('Get all users');
+    } catch (e) {
+      res.send('Failed to get all users');
+    }
+  },
+);
 
-router.get('/:id', async (req, res) => {
-  try {
-    res.send('Get a user by ID');
-  } catch (e) {
-    res.send('Failed to get a user by ID');
-  }
-});
+router.get(
+  '/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      res.send('Get a user by ID');
+    } catch (e) {
+      res.send('Failed to get a user by ID');
+    }
+  },
+);
 
-router.put('/:id', async (req, res) => {
-  try {
-    res.send('Update a user by ID');
-  } catch (e) {
-    res.send('Failed to update a user by ID');
-  }
-});
+router.put(
+  '/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      res.send('Update a user by ID');
+    } catch (e) {
+      res.send('Failed to update a user by ID');
+    }
+  },
+);
+
+router.delete(
+  '/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      const deleteUserRes = await AuthController.delete(req);
+      res.json(deleteUserRes);
+    } catch (e) {
+      res.send('Failed to delete a user by ID');
+    }
+  },
+);
 
 export default router;

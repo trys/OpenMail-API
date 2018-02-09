@@ -4,17 +4,40 @@ import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import passport from 'passport';
+import passportJWT from 'passport-jwt';
+
 import AuthController from './controllers/Auth';
 import loginRoutes from './routes/login';
 import usersRoutes from './routes/users';
 import campaignsRoutes from './routes/campaigns';
 
+const ExtractJwt = passportJWT.ExtractJwt;
+const JwtStrategy = passportJWT.Strategy;
+
 const PORT = 8080 || process.env.PORT;
 const app = express();
+
+const jwtOptions = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderWithScheme('Bearer'),
+  secretOrKey: process.env.JWT_SIG,
+};
+
+const authStrategy = new JwtStrategy(jwtOptions, async (jwt, next) => {
+  const checkToken = await AuthController.checkToken(jwt);
+
+  if (checkToken) {
+    next(null, checkToken);
+  } else {
+    next(null, false);
+  }
+});
 
 app.use(bodyParser.json());
 app.use(cors());
 app.use(morgan('combined'));
+app.use(passport.initialize());
+passport.use(authStrategy);
 
 app.get('/api', (req, res) => {
   res.send('OpenMail API');

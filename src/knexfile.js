@@ -1,28 +1,13 @@
+const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
+
 module.exports = {
   development: {
     client: 'mysql',
     connection: {
-      host: 'localhost',
-      user: 'root',
-      password: '',
-      database: 'openmail',
-    },
-    pool: {
-      min: 2,
-      max: 10,
-    },
-    migrations: {
-      tableName: 'knex_migrations',
-    },
-  },
-
-  staging: {
-    client: 'mysql',
-    connection: {
-      host: 'localhost',
-      user: 'root',
-      password: '',
-      database: 'openmail',
+      host: DB_HOST,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      database: DB_NAME,
     },
     pool: {
       min: 2,
@@ -36,10 +21,10 @@ module.exports = {
   production: {
     client: 'mysql',
     connection: {
-      host: 'localhost',
-      user: 'root',
-      password: '',
-      database: 'openmail',
+      host: DB_HOST,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      database: DB_NAME,
     },
     pool: {
       min: 2,
