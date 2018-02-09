@@ -1,13 +1,13 @@
-const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
+const config = require('./config/local');
 
 module.exports = {
   development: {
     client: 'mysql',
     connection: {
-      host: DB_HOST,
-      user: DB_USER,
-      password: DB_PASSWORD,
-      database: DB_NAME,
+      host: config.DB_HOST,
+      user: config.DB_USER,
+      password: config.DB_PASSWORD,
+      database: config.DB_NAME,
     },
     pool: {
       min: 2,
@@ -21,10 +21,10 @@ module.exports = {
   production: {
     client: 'mysql',
     connection: {
-      host: DB_HOST,
-      user: DB_USER,
-      password: DB_PASSWORD,
-      database: DB_NAME,
+      host: config.DB_HOST,
+      user: config.DB_USER,
+      password: config.DB_PASSWORD,
+      database: config.DB_NAME,
     },
     pool: {
       min: 2,

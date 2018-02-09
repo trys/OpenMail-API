@@ -1,6 +1,7 @@
 import express from 'express';
 import passport from 'passport';
 import AuthController from '../controllers/Auth';
+import UsersController from '../controllers/Users';
 const router = express.Router();
 
 /*
@@ -24,9 +25,10 @@ router.get(
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      res.send('Get all users');
+      const result = await UsersController.getAll();
+      res.json(result);
     } catch (e) {
-      res.send('Failed to get all users');
+      res.json(e);
     }
   },
 );
