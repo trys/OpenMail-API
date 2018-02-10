@@ -29,3 +29,5 @@
 * Import subscibers CSV to list
 * Export subscribers CSV from list
 * User defined list columns in addition to the default firstName and lastName
+* Public endpoint to add a subscriber to a list, e.g. for an API integration/signup form
+* Request payload validation, maybe with something like https://github.com/ctavan/express-validator
