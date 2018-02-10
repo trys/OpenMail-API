@@ -1,19 +1,15 @@
 import express from 'express';
 import passport from 'passport';
-import CampaignsController from '../controllers/Campaigns';
+import SubscribersController from '../controllers/Subscribers';
 const router = express.Router();
-
-/*
-* CAMPAIGNS routes
-*/
 
 router.get(
   '/',
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      const result = await CampaignsController.getAll();
-      res.json(result);
+      res.send('Get all subscribers');
+      // res.json(result);
     } catch (e) {
       res.json(e);
       console.log(e);
@@ -26,9 +22,10 @@ router.get(
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      res.send('Get a campaign by ID');
+      res.send('Get a subscriber by ID');
+      // res.json(result);
     } catch (e) {
-      res.send('Failed to get a campaign by ID');
+      res.json(e);
       console.log(e);
     }
   },
@@ -39,8 +36,22 @@ router.post(
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      const result = await CampaignsController.createCampaign(req);
+      const result = await SubscribersController.create(req);
       res.json(result);
+    } catch (e) {
+      res.json(e);
+      console.log(e);
+    }
+  },
+);
+
+router.put(
+  '/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      res.send('Update a subscriber');
+      // res.json(result);
     } catch (e) {
       res.json(e);
       console.log(e);
@@ -53,9 +64,10 @@ router.delete(
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      res.send('Delete a campaign by ID');
+      res.send('Delete a subscriber by ID');
+      // res.json(result);
     } catch (e) {
-      res.send('Failed to delete campaign by ID');
+      res.json(e);
       console.log(e);
     }
   },

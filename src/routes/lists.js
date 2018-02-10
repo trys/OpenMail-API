@@ -1,10 +1,10 @@
 import express from 'express';
 import passport from 'passport';
-import CampaignsController from '../controllers/Campaigns';
+import ListsController from '../controllers/Lists';
 const router = express.Router();
 
 /*
-* CAMPAIGNS routes
+* LISTS routes
 */
 
 router.get(
@@ -12,7 +12,7 @@ router.get(
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      const result = await CampaignsController.getAll();
+      const result = await ListsController.getAll();
       res.json(result);
     } catch (e) {
       res.json(e);
@@ -26,9 +26,10 @@ router.get(
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      res.send('Get a campaign by ID');
+      const result = await ListsController.getListSubscribers(req.params.id);
+      res.json(result);
     } catch (e) {
-      res.send('Failed to get a campaign by ID');
+      res.json(e);
       console.log(e);
     }
   },
@@ -39,7 +40,7 @@ router.post(
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      const result = await CampaignsController.createCampaign(req);
+      const result = await ListsController.createList(req);
       res.json(result);
     } catch (e) {
       res.json(e);
@@ -53,9 +54,10 @@ router.delete(
   passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      res.send('Delete a campaign by ID');
+      const result = await ListsController.delete(req.params.id);
+      res.json(result);
     } catch (e) {
-      res.send('Failed to delete campaign by ID');
+      res.json(e);
       console.log(e);
     }
   },

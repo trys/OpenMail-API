@@ -11,6 +11,8 @@ import AuthController from './controllers/Auth';
 import loginRoutes from './routes/login';
 import usersRoutes from './routes/users';
 import campaignsRoutes from './routes/campaigns';
+import listsRoutes from './routes/lists';
+import subscribersRoutes from './routes/subscribers';
 
 const ExtractJwt = passportJWT.ExtractJwt;
 const JwtStrategy = passportJWT.Strategy;
@@ -24,10 +26,10 @@ const jwtOptions = {
 };
 
 const authStrategy = new JwtStrategy(jwtOptions, async (jwt, next) => {
-  const checkToken = await AuthController.checkToken(jwt);
+  const tokenIsValid = await AuthController.checkToken(jwt);
 
-  if (checkToken) {
-    next(null, checkToken);
+  if (tokenIsValid) {
+    next(null, tokenIsValid);
   } else {
     next(null, false);
   }
@@ -46,6 +48,8 @@ app.get('/api', (req, res) => {
 app.use('/api/login', loginRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/campaigns', campaignsRoutes);
+app.use('/api/lists', listsRoutes);
+app.use('/api/subscribers', subscribersRoutes);
 
 app.listen(PORT, () => {
   console.log(`Running on port ${PORT}`);
