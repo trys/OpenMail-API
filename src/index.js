@@ -7,8 +7,11 @@ import bodyParser from 'body-parser';
 import passport from 'passport';
 import passportJWT from 'passport-jwt';
 import kue from 'kue';
+import fs from 'fs';
+import csv from 'fast-csv';
 
 import AuthController from './controllers/Auth';
+import SubscribersController from './controllers/Subscribers';
 import loginRoutes from './routes/login';
 import usersRoutes from './routes/users';
 import campaignsRoutes from './routes/campaigns';
@@ -29,6 +32,42 @@ queue.process(`sendEmail`, 10, (job, done) => {
       done();
     }
   });
+});
+
+queue.process('importCsv', (job, done) => {
+  const filePath = __dirname + '/../' + job.data.filePath;
+  const listId = job.data.listId;
+
+  fs
+    .createReadStream(filePath)
+    .pipe(csv())
+    .on('data', async data => {
+      queue
+        .create('importSubscriber', {
+          title: 'Import subscriber',
+          body: {
+            emailAddress: data[0],
+            listId: listId,
+          },
+        })
+        .save(err => {
+          if (!err) {
+            console.log(`Queued subscriber import ${job.id}`);
+          }
+        });
+    })
+    .on('end', function() {
+      console.log('done');
+      done();
+    });
+});
+
+queue.process('importSubscriber', 10, async (job, done) => {
+  const createResult = await SubscribersController.create(job.data);
+
+  if (createResult) {
+    done();
+  }
 });
 
 const ExtractJwt = passportJWT.ExtractJwt;

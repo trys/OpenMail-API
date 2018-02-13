@@ -1,6 +1,32 @@
 import db from '../utils/db';
+import queue from '../utils/queue';
 
 class ListsController {
+  static async import(payload) {
+    try {
+      const listId = payload.params.id;
+      const csvFile = payload.file;
+
+      let job = queue
+        .create('importCsv', {
+          title: `Importing CSV to list ${listId}`,
+          listId: listId,
+          filePath: csvFile.path,
+        })
+        .save(err => {
+          if (!err) {
+            console.log(`Queued import ${job.id}`);
+          }
+        });
+
+      return {
+        success: true,
+        status: 'importing',
+      };
+    } catch (e) {
+      console.error('Errored with ', e);
+    }
+  }
   static async createList(payload) {
     try {
       const { listName } = payload.body;
