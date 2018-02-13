@@ -6,6 +6,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import passport from 'passport';
 import passportJWT from 'passport-jwt';
+import kue from 'kue';
 
 import AuthController from './controllers/Auth';
 import loginRoutes from './routes/login';
@@ -13,6 +14,21 @@ import usersRoutes from './routes/users';
 import campaignsRoutes from './routes/campaigns';
 import listsRoutes from './routes/lists';
 import subscribersRoutes from './routes/subscribers';
+import CampaignsController from './controllers/Campaigns';
+import queue from './utils/queue';
+import transporter from './utils/transporter';
+
+/*
+* Queue Jobs
+*/
+
+queue.process(`sendEmail`, 10, (job, done) => {
+  transporter.sendMail(job.data, (err, info) => {
+    if (!err) {
+      done();
+    }
+  });
+});
 
 const ExtractJwt = passportJWT.ExtractJwt;
 const JwtStrategy = passportJWT.Strategy;
@@ -26,11 +42,18 @@ const jwtOptions = {
 };
 
 const authStrategy = new JwtStrategy(jwtOptions, async (jwt, next) => {
-  const tokenIsValid = await AuthController.checkToken(jwt);
+  console.log('auth strategy');
+  try {
+    console.log('...trying');
+    const tokenIsValid = await AuthController.checkToken(jwt);
 
-  if (tokenIsValid) {
+    if (!tokenIsValid) {
+      throw new Error('Unauthorized');
+    }
+
     next(null, tokenIsValid);
-  } else {
+  } catch (e) {
+    console.log('we got an error ', e.toString());
     next(null, false);
   }
 });
@@ -53,4 +76,8 @@ app.use('/api/subscribers', subscribersRoutes);
 
 app.listen(PORT, () => {
   console.log(`Running on port ${PORT}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Kue running on port 8081');
+    kue.app.listen(8081);
+  }
 });

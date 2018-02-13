@@ -3,12 +3,14 @@ import db from '../utils/db';
 class Config {
   static async read(key) {
     try {
-      await db
+      let result = await db
         .select('configValue')
         .where({
           configKey: key,
         })
         .from('configuration');
+
+      return result[0].configValue;
     } catch (e) {
       console.error(e);
     }
