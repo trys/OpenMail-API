@@ -79,6 +79,8 @@ class CampaignsController {
         })
         .into('campaigns');
 
+      await this.sendCampaign(res);
+
       return {
         success: true,
         message: `Campaign with ID ${res} Created`,

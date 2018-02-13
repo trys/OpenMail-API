@@ -5,6 +5,7 @@
 ### Prerequisites
 
 * Have MySQL running locally
+* Have Redis running locally `brew install redis` and `brew services start redis`
 * Node.js 8.6.0 or later
 * npm or yarn
 * Knex CLI installed `npm install -g knex`
@@ -20,7 +21,7 @@
 ## TODO
 
 * Allow subscribers to be members of multiple lists
-* Set up the AWS SDK and implement sending batch emails (the core feature of this whole project, which I haven't done yet)
+* ~~Set up the AWS SDK and implement sending batch emails (the core feature of this whole project, which I haven't done yet)~~
 * Allow users to schedule emails
 * Update and delete users endpoints
 * Update and delete individual subscribers endpoints
