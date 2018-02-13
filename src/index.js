@@ -14,6 +14,7 @@ import usersRoutes from './routes/users';
 import campaignsRoutes from './routes/campaigns';
 import listsRoutes from './routes/lists';
 import subscribersRoutes from './routes/subscribers';
+import settingsRoutes from './routes/settings';
 import CampaignsController from './controllers/Campaigns';
 import queue from './utils/queue';
 import transporter from './utils/transporter';
@@ -73,6 +74,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/campaigns', campaignsRoutes);
 app.use('/api/lists', listsRoutes);
 app.use('/api/subscribers', subscribersRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Running on port ${PORT}`);
