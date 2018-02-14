@@ -27,7 +27,7 @@
 * Update and delete individual subscribers endpoints
 * Update list name endpoint
 * Campaign reporting stats
-* Import subscibers CSV to list
+* ~~Import subscibers CSV to list~~
 * Export subscribers CSV from list
 * User defined list columns in addition to the default firstName and lastName
 * Public endpoint to add a subscriber to a list, e.g. for an API integration/signup form

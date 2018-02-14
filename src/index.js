@@ -22,16 +22,47 @@ import CampaignsController from './controllers/Campaigns';
 import queue from './utils/queue';
 import transporter from './utils/transporter';
 
+import getMetric from './utils/getMetric';
+
+getMetric('Click', new Date('Tue Feb 13 2018 06:00:00 GMT-0800 (PST)'), 1).then(data => {
+  let aggregated = data.Datapoints.reduce((a, b) => {
+    return a + b.Sum;
+  }, 0);
+  console.log(aggregated + ' Clicks');
+});
+
+getMetric('Open', new Date('Tue Feb 13 2018 06:00:00 GMT-0800 (PST)'), 1).then(data => {
+  let aggregated = data.Datapoints.reduce((a, b) => {
+    return a + b.Sum;
+  }, 0);
+  console.log(aggregated + ' Opens');
+});
+
+getMetric('Delivery', new Date('Tue Feb 13 2018 06:00:00 GMT-0800 (PST)'), 1).then(data => {
+  let aggregated = data.Datapoints.reduce((a, b) => {
+    return a + b.Sum;
+  }, 0);
+  console.log(aggregated + ' Delivered');
+});
+
 /*
 * Queue Jobs
 */
 
 queue.process(`sendEmail`, 10, (job, done) => {
-  transporter.sendMail(job.data, (err, info) => {
-    if (!err) {
-      done();
-    }
-  });
+  transporter.sendMail(
+    {
+      headers: {
+        'X-SES-CONFIGURATION-SET': 'marketing_stats',
+      },
+      ...job.data,
+    },
+    (err, info) => {
+      if (!err) {
+        done();
+      }
+    },
+  );
 });
 
 queue.process('importCsv', (job, done) => {
@@ -82,9 +113,7 @@ const jwtOptions = {
 };
 
 const authStrategy = new JwtStrategy(jwtOptions, async (jwt, next) => {
-  console.log('auth strategy');
   try {
-    console.log('...trying');
     const tokenIsValid = await AuthController.checkToken(jwt);
 
     if (!tokenIsValid) {
@@ -93,7 +122,7 @@ const authStrategy = new JwtStrategy(jwtOptions, async (jwt, next) => {
 
     next(null, tokenIsValid);
   } catch (e) {
-    console.log('we got an error ', e.toString());
+    console.log(e.toString());
     next(null, false);
   }
 });
