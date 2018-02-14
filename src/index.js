@@ -57,6 +57,10 @@ queue.process('createCampaign', async (job, done) => {
       id: job.data.campaignId,
     });
 
+  /*
+  * TODO: Replace this setInterval rubbish with proper task scheduling.
+  * Should collect stats for a campaign every 5-15 minutes for 3 days after the campaign was sent.
+  */
   setInterval(() => {
     Promise.all([
       getMetric('Click', new Date(campaignResult[0].createdAt), job.data.campaignId),
