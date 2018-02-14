@@ -1,6 +1,12 @@
 import aws from 'aws-sdk';
 const cloudwatch = new aws.CloudWatch();
 
+export const findStatFromReduced = (reducedStats, statLabel) => {
+  return reducedStats.find(stat => stat.label === statLabel)
+    ? reducedStats.find(stat => stat.label === statLabel).count
+    : 0;
+};
+
 export default function getMetric(metric, startTime = Date.now(), campaignId) {
   return new Promise((resolve, reject) => {
     cloudwatch.getMetricStatistics(

@@ -15,16 +15,26 @@ class CampaignsController {
 
       campaign = campaign.result;
 
-      const getSubscribers = await ListsController.getListSubscribers(
-        campaign.listId,
-      );
+      const getSubscribers = await ListsController.getListSubscribers(campaign.listId);
 
       const subscribers = getSubscribers.result.subscribers;
 
+      let campaignJob = queue
+        .create('createCampaign', {
+          title: `Create campaign ${id}`,
+          campaignId: id,
+        })
+        .save(err => {
+          if (!err) {
+            console.log(campaignJob.id);
+          }
+        });
+
       subscribers.map(member => {
         let job = queue
-          .create(`sendEmail`, {
+          .create('sendEmail', {
             title: `Campaign ${id} to ${member.emailAddress}`,
+            campaignId: id,
             from: `${fromName} <${fromEmail}>`,
             to: member.emailAddress,
             subject: campaign.subject,
@@ -46,14 +56,7 @@ class CampaignsController {
   static async getCampaign(id) {
     try {
       let campaign = await db
-        .select(
-          'id',
-          'subject',
-          'listId',
-          'htmlContent',
-          'createdAt',
-          'reportId',
-        )
+        .select('id', 'subject', 'listId', 'htmlContent', 'createdAt', 'reportId')
         .from('campaigns')
         .where({
           id: id,
@@ -94,9 +97,7 @@ class CampaignsController {
   }
   static async getAll() {
     try {
-      const campaignsResult = await db
-        .select('id', 'subject', 'listId', 'createdAt', 'reportId')
-        .from('campaigns');
+      const campaignsResult = await db.select('id', 'subject', 'listId', 'createdAt', 'reportId').from('campaigns');
 
       return {
         success: true,

@@ -21,43 +21,91 @@ import settingsRoutes from './routes/settings';
 import CampaignsController from './controllers/Campaigns';
 import queue from './utils/queue';
 import transporter from './utils/transporter';
-
-import getMetric from './utils/getMetric';
-
-getMetric('Click', new Date('Tue Feb 13 2018 06:00:00 GMT-0800 (PST)'), 1).then(data => {
-  let aggregated = data.Datapoints.reduce((a, b) => {
-    return a + b.Sum;
-  }, 0);
-  console.log(aggregated + ' Clicks');
-});
-
-getMetric('Open', new Date('Tue Feb 13 2018 06:00:00 GMT-0800 (PST)'), 1).then(data => {
-  let aggregated = data.Datapoints.reduce((a, b) => {
-    return a + b.Sum;
-  }, 0);
-  console.log(aggregated + ' Opens');
-});
-
-getMetric('Delivery', new Date('Tue Feb 13 2018 06:00:00 GMT-0800 (PST)'), 1).then(data => {
-  let aggregated = data.Datapoints.reduce((a, b) => {
-    return a + b.Sum;
-  }, 0);
-  console.log(aggregated + ' Delivered');
-});
+import db from './utils/db';
+import getMetric, { findStatFromReduced } from './utils/getMetric';
 
 /*
 * Queue Jobs
 */
 
-queue.process(`sendEmail`, 10, (job, done) => {
+queue.process('createCampaign', async (job, done) => {
+  let campaignResult = await db
+    .select('createdAt')
+    .where({
+      id: job.data.campaignId,
+    })
+    .from('campaigns');
+
+  let reportId = await db
+    .insert({
+      status: 'sending',
+      opens: 0,
+      deliveries: 0,
+      rejects: 0,
+      bounces: 0,
+      complaints: 0,
+      clicks: 0,
+      campaignId: job.data.campaignId,
+    })
+    .into('reports');
+
+  let updateCampaignWithReportId = await db('campaigns')
+    .update({
+      reportId: reportId,
+    })
+    .where({
+      id: job.data.campaignId,
+    });
+
+  setInterval(() => {
+    Promise.all([
+      getMetric('Click', new Date(campaignResult[0].createdAt), job.data.campaignId),
+      getMetric('Open', new Date(campaignResult[0].createdAt), job.data.campaignId),
+      getMetric('Delivery', new Date(campaignResult[0].createdAt), job.data.campaignId),
+      getMetric('Bounce', new Date(campaignResult[0].createdAt), job.data.campaignId),
+      getMetric('Complaint', new Date(campaignResult[0].createdAt), job.data.campaignId),
+    ]).then(async result => {
+      let reducedStats = result.map(data => {
+        return data.Datapoints.reduce((a, b) => {
+          return {
+            label: data.Label,
+            count: a + b.Sum,
+          };
+        }, 0);
+      });
+
+      console.log(reducedStats);
+
+      let res = await db('reports')
+        .update({
+          clicks: findStatFromReduced(reducedStats, 'Click'),
+          opens: findStatFromReduced(reducedStats, 'Open'),
+          deliveries: findStatFromReduced(reducedStats, 'Delivery'),
+          bounces: findStatFromReduced(reducedStats, 'Bounce'),
+          complaints: findStatFromReduced(reducedStats, 'Complaint'),
+        })
+        .where({
+          id: reportId,
+        });
+    });
+  }, 10000);
+
+  if (reportId) {
+    done();
+  }
+});
+
+queue.process('sendEmail', 10, (job, done) => {
   transporter.sendMail(
     {
       headers: {
-        'X-SES-CONFIGURATION-SET': 'marketing_stats',
+        'X-SES-CONFIGURATION-SET': 'marketing_statistics',
+        'X-SES-MESSAGE-TAGS': `campaign=${job.data.campaignId}`,
       },
       ...job.data,
     },
     (err, info) => {
+      console.log(err);
       if (!err) {
         done();
       }
