@@ -9,6 +9,8 @@ import passportJWT from 'passport-jwt';
 import kue from 'kue';
 import fs from 'fs';
 import csv from 'fast-csv';
+import cron from 'node-cron';
+import { DateTime } from 'luxon';
 
 import AuthController from './controllers/Auth';
 import SubscribersController from './controllers/Subscribers';
@@ -27,6 +29,31 @@ import getMetric, { findStatFromReduced } from './utils/getMetric';
 /*
 * Queue Jobs
 */
+
+// Every 5 minutes, get list of campaign where campaign is under 3 days old, and collect stats.
+cron.schedule('*/5 * * * *', async () => {
+  console.log('Collecting Stats...');
+  let campaignResult = await db
+    .select('id', 'createdAt', 'reportId')
+    .whereBetween('createdAt', [
+      DateTime.local()
+        .minus({ days: 3 })
+        .toFormat('yyyy-LL-dd HH:mm:ss'),
+      DateTime.local().toFormat('yyyy-LL-dd HH:mm:ss'),
+    ])
+    .from('campaigns');
+
+  campaignResult.map(activeCampaign => {
+    queue
+      .create('collectStats', {
+        title: `Collecting Stats for campaign ${activeCampaign.id}`,
+        campaignId: activeCampaign.id,
+        reportId: activeCampaign.reportId,
+        date: activeCampaign.createdAt,
+      })
+      .save(err => {});
+  });
+});
 
 queue.process('createReport', async (job, done) => {
   try {
@@ -58,47 +85,49 @@ queue.process('createReport', async (job, done) => {
         id: job.data.campaignId,
       });
 
-    /*
-    * TODO: Replace this setInterval rubbish with proper task scheduling.
-    * Should collect stats for a campaign every 5-15 minutes for 3 days after the campaign was sent.
-    */
-    setInterval(() => {
-      Promise.all([
-        getMetric('Click', new Date(campaignResult[0].createdAt), job.data.campaignId),
-        getMetric('Open', new Date(campaignResult[0].createdAt), job.data.campaignId),
-        getMetric('Delivery', new Date(campaignResult[0].createdAt), job.data.campaignId),
-        getMetric('Bounce', new Date(campaignResult[0].createdAt), job.data.campaignId),
-        getMetric('Complaint', new Date(campaignResult[0].createdAt), job.data.campaignId),
-      ]).then(async result => {
-        // Map over each result from CloudWatch and reduce all of the event sums
-        let reducedStats = result.map(data => {
-          return data.Datapoints.reduce((a, b) => {
-            return {
-              label: data.Label,
-              count: a + b.Sum,
-            };
-          }, 0);
-        });
-
-        // Update the database with the reduced stats
-        let res = await db('reports')
-          .update({
-            clicks: findStatFromReduced(reducedStats, 'Click'),
-            opens: findStatFromReduced(reducedStats, 'Open'),
-            deliveries: findStatFromReduced(reducedStats, 'Delivery'),
-            bounces: findStatFromReduced(reducedStats, 'Bounce'),
-            complaints: findStatFromReduced(reducedStats, 'Complaint'),
-          })
-          .where({
-            id: reportId,
-          });
-      });
-    }, 10000);
-
     done();
   } catch (e) {
     done(e);
   }
+});
+
+queue.process('collectStats', (job, done) => {
+  Promise.all([
+    getMetric('Click', new Date(job.data.date), job.data.campaignId),
+    getMetric('Open', new Date(job.data.date), job.data.campaignId),
+    getMetric('Delivery', new Date(job.data.date), job.data.campaignId),
+    getMetric('Bounce', new Date(job.data.date), job.data.campaignId),
+    getMetric('Complaint', new Date(job.data.date), job.data.campaignId),
+  ]).then(async result => {
+    try {
+      // Map over each result from CloudWatch and reduce all of the event sums
+      let reducedStats = result.map(data => {
+        return data.Datapoints.reduce((a, b) => {
+          return {
+            label: data.Label,
+            count: a + b.Sum,
+          };
+        }, 0);
+      });
+
+      // Update the database with the reduced stats
+      let res = await db('reports')
+        .update({
+          clicks: findStatFromReduced(reducedStats, 'Click'),
+          opens: findStatFromReduced(reducedStats, 'Open'),
+          deliveries: findStatFromReduced(reducedStats, 'Delivery'),
+          bounces: findStatFromReduced(reducedStats, 'Bounce'),
+          complaints: findStatFromReduced(reducedStats, 'Complaint'),
+        })
+        .where({
+          id: job.data.reportId,
+        });
+
+      done();
+    } catch (e) {
+      done(e);
+    }
+  });
 });
 
 queue.process('sendEmail', 10, (job, done) => {
