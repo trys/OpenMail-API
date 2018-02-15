@@ -12,26 +12,25 @@ class SubscribersController {
     };
   }
   static async create(payload) {
-    const {
-      firstName = '',
-      lastName = '',
-      emailAddress,
-      listId,
-    } = payload.body;
+    try {
+      const { firstName = '', lastName = '', emailAddress, listId } = payload.body;
 
-    const createSubscriber = await db
-      .insert({
-        firstName,
-        lastName,
-        emailAddress,
-        listId,
-      })
-      .into('subscribers');
+      const createSubscriber = await db
+        .insert({
+          firstName,
+          lastName,
+          emailAddress,
+          listId,
+        })
+        .into('subscribers');
 
-    return {
-      success: true,
-      message: 'Subscriber created',
-    };
+      return {
+        success: true,
+        message: 'Subscriber created',
+      };
+    } catch (e) {
+      return e.toString();
+    }
   }
   static async delete() {
     return {

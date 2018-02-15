@@ -19,14 +19,14 @@ class CampaignsController {
 
       const subscribers = getSubscribers.result.subscribers;
 
-      let campaignJob = queue
-        .create('createCampaign', {
-          title: `Create campaign ${id}`,
+      let reportJob = queue
+        .create('createReport', {
+          title: `Create report ${id}`,
           campaignId: id,
         })
         .save(err => {
           if (!err) {
-            console.log(campaignJob.id);
+            console.log(reportJob.id);
           }
         });
 
