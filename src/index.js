@@ -27,10 +27,12 @@ import db from './utils/db';
 import getMetric, { findStatFromReduced } from './utils/getMetric';
 
 /*
-* Queue Jobs
+* Cron Jobs
 */
 
-// Every 5 minutes, get list of campaign where campaign is under 3 days old, and collect stats.
+/*
+* Every 5 minutes, get list of campaign where campaign is under 3 days old, and collect stats.
+*/
 cron.schedule('*/5 * * * *', async () => {
   console.log('Collecting Stats...');
   let campaignResult = await db
@@ -55,6 +57,13 @@ cron.schedule('*/5 * * * *', async () => {
   });
 });
 
+/*
+* Queue Jobs
+*/
+
+/*
+* Create a report record and update campaign with reportId
+*/
 queue.process('createReport', async (job, done) => {
   try {
     let campaignResult = await db
@@ -91,6 +100,9 @@ queue.process('createReport', async (job, done) => {
   }
 });
 
+/*
+* Collect stats from CloudWatch and write to database
+*/
 queue.process('collectStats', (job, done) => {
   Promise.all([
     getMetric('Click', new Date(job.data.date), job.data.campaignId),
@@ -98,36 +110,40 @@ queue.process('collectStats', (job, done) => {
     getMetric('Delivery', new Date(job.data.date), job.data.campaignId),
     getMetric('Bounce', new Date(job.data.date), job.data.campaignId),
     getMetric('Complaint', new Date(job.data.date), job.data.campaignId),
-  ]).then(async result => {
-    try {
-      // Map over each result from CloudWatch and reduce all of the event sums
-      let reducedStats = result.map(data => {
-        return data.Datapoints.reduce((a, b) => {
-          return {
-            label: data.Label,
-            count: a + b.Sum,
-          };
-        }, 0);
-      });
-
-      // Update the database with the reduced stats
-      let res = await db('reports')
-        .update({
-          clicks: findStatFromReduced(reducedStats, 'Click'),
-          opens: findStatFromReduced(reducedStats, 'Open'),
-          deliveries: findStatFromReduced(reducedStats, 'Delivery'),
-          bounces: findStatFromReduced(reducedStats, 'Bounce'),
-          complaints: findStatFromReduced(reducedStats, 'Complaint'),
-        })
-        .where({
-          id: job.data.reportId,
+  ])
+    .then(async result => {
+      try {
+        // Map over each result from CloudWatch and reduce all of the event sums
+        let reducedStats = result.map(data => {
+          return data.Datapoints.reduce((a, b) => {
+            return {
+              label: data.Label,
+              count: a + b.Sum,
+            };
+          }, 0);
         });
 
-      done();
-    } catch (e) {
+        // Update the database with the reduced stats
+        let res = await db('reports')
+          .update({
+            clicks: findStatFromReduced(reducedStats, 'Click'),
+            opens: findStatFromReduced(reducedStats, 'Open'),
+            deliveries: findStatFromReduced(reducedStats, 'Delivery'),
+            bounces: findStatFromReduced(reducedStats, 'Bounce'),
+            complaints: findStatFromReduced(reducedStats, 'Complaint'),
+          })
+          .where({
+            id: job.data.reportId,
+          });
+
+        done();
+      } catch (e) {
+        done(e);
+      }
+    })
+    .catch(e => {
       done(e);
-    }
-  });
+    });
 });
 
 queue.process('sendEmail', 10, (job, done) => {
@@ -169,6 +185,13 @@ queue.process('importCsv', (job, done) => {
     })
     .on('end', () => {
       console.log('Queued CSV for import');
+      fs.unlink(filePath, err => {
+        if (err) {
+          console.error(err);
+        } else {
+          console.log('Deleted file');
+        }
+      });
       done();
     });
 });
@@ -220,7 +243,7 @@ app.get('/api', (req, res) => {
   res.send('OpenMail API');
 });
 
-app.use('/api/login', loginRoutes);
+app.use('/api/auth', loginRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/campaigns', campaignsRoutes);
 app.use('/api/lists', listsRoutes);

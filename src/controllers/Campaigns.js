@@ -110,6 +110,28 @@ class CampaignsController {
       };
     }
   }
+  static async getReport(campaignId) {
+    try {
+      const reportResult = await db
+        .select()
+        .where({
+          campaignId: campaignId,
+        })
+        .from('reports');
+
+      console.log(reportResult);
+
+      return {
+        success: true,
+        result: reportResult[0],
+      };
+    } catch (e) {
+      return {
+        success: false,
+        error: e.toString(),
+      };
+    }
+  }
 }
 
 export default CampaignsController;
