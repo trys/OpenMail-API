@@ -33,7 +33,7 @@ import getMetric, { findStatFromReduced } from './utils/getMetric';
 /*
 * Every 5 minutes, get list of campaign where campaign is under 3 days old, and collect stats.
 */
-cron.schedule('*/5 * * * *', async () => {
+cron.schedule('*/1 * * * *', async () => {
   console.log('Collecting Stats...');
   let campaignResult = await db
     .select('id', 'createdAt', 'reportId')
@@ -115,12 +115,12 @@ queue.process('collectStats', (job, done) => {
       try {
         // Map over each result from CloudWatch and reduce all of the event sums
         let reducedStats = result.map(data => {
-          return data.Datapoints.reduce((a, b) => {
-            return {
-              label: data.Label,
-              count: a + b.Sum,
-            };
-          }, 0);
+          return {
+            label: data.Label,
+            count: data.Datapoints.reduce((a, b) => {
+              return a + b.Sum;
+            }, 0),
+          };
         });
 
         // Update the database with the reduced stats
