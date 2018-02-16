@@ -33,7 +33,7 @@ import getMetric, { findStatFromReduced } from './utils/getMetric';
 /*
 * Every 5 minutes, get list of campaign where campaign is under 3 days old, and collect stats.
 */
-cron.schedule('*/1 * * * *', async () => {
+cron.schedule('*/5 * * * *', async () => {
   console.log('Collecting Stats...');
   let campaignResult = await db
     .select('id', 'createdAt', 'reportId')
@@ -45,16 +45,18 @@ cron.schedule('*/1 * * * *', async () => {
     ])
     .from('campaigns');
 
-  campaignResult.map(activeCampaign => {
-    queue
-      .create('collectStats', {
-        title: `Collecting Stats for campaign ${activeCampaign.id}`,
-        campaignId: activeCampaign.id,
-        reportId: activeCampaign.reportId,
-        date: activeCampaign.createdAt,
-      })
-      .save(err => {});
-  });
+  if (campaignResult.length > 0) {
+    campaignResult.map(activeCampaign => {
+      queue
+        .create('collectStats', {
+          title: `Collecting Stats for campaign ${activeCampaign.id}`,
+          campaignId: activeCampaign.id,
+          reportId: activeCampaign.reportId,
+          date: activeCampaign.createdAt,
+        })
+        .save(err => {});
+    });
+  }
 });
 
 /*
