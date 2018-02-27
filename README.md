@@ -31,3 +31,39 @@
 * User defined list columns in addition to the default firstName and lastName
 * Public endpoint to add a subscriber to a list, e.g. for an API integration/signup form
 * Request payload validation, maybe with something like this https://github.com/ctavan/express-validator
+
+
+## Knex seeds and migrations
+### Seeds
+#### Create
+```
+npm run seed the_name_of_seed
+
+# By default this runs on development, but can be overwritten:
+npm run seed the_name_of_seed NODE_ENV=development
+
+# Alternatively, for test seeds (the most common):
+npm run seed:test the_name_of_seed
+```
+
+#### Run
+```
+# Environment rules apply as above:
+npm run seed:run
+```
+
+### Migrations
+#### Create
+```
+npm run migrate the_name_of_migration
+```
+
+#### Run
+```
+npm run migrate:latest
+```
+
+#### Rollback
+```
+npm run migrate:rollback
+```
